@@ -1,0 +1,283 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<title></title>
+
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+<body>
+    
+    <canvas width="480" height="320"></canvas>
+
+    <table>
+        <tr>
+            <th>Time</th>
+            <th>State</th>
+        </tr>
+    </table>
+
+    <button>Clear History</button>
+  
+
+
+<style>
+{
+    margin: 0;
+    padding: 0;
+}
+
+body{
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+canvas {
+    background: #eee;
+    display: block;
+    margin: 0 auto;
+}
+
+table {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    width: 90%;
+    margin: 40px auto;
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+}
+
+button {
+    padding: 10px;
+    background: none;
+    width: 30%;
+    margin: 70px auto;
+    border: 0;
+    border: 1px solid rgb(194, 0, 0);
+    color: #333;
+    font-size: 1.5rem;
+    outline: 0;
+    cursor: pointer;
+    border-radius: 7px;
+    transition: .3s;
+    &:hover{
+        background: rgb(194, 0, 0);
+        color: #fff;
+    }
+}
+</style>
+
+
+</head>
+
+
+<body>
+  
+<script>
+  
+var $ = document
+var canvas = $.querySelector('canvas')
+var tableContent = $.querySelector('table')
+var clearHistoryBtn = $.querySelector('button')
+var ctx = canvas.getContext("2d")
+var x = canvas.width/2
+var y = canvas.height-30
+var dx = 3
+var dy = -3
+var ballRadius = 10
+var paddleHeight = 10
+var paddleWidth = 75
+var paddleX = (canvas.width-paddleWidth) / 2
+var rightPressed = false
+var leftPressed = false
+var brickRowCount = 3
+var brickColumnCount = 5
+var brickWidth = 75
+var brickHeight = 20
+var brickPadding = 10
+var brickOffsetTop = 30
+var brickOffsetLeft = 30
+var bricks = []
+var score = 0
+var lives = 3
+var time = new Date()
+
+for (let c = 0; c < brickColumnCount; c++){
+    bricks[c] = []
+    for (let r = 0; r < brickRowCount; r++) {
+        bricks[c][r] = {x : 0, y : 0, status : 1}
+    }
+}
+
+$.addEventListener('keydown', keyDownHandler, false)
+
+$.addEventListener('keyup', keyUpHandler, false)
+
+$.addEventListener('mousemove', mouseMoveHandler, false)
+
+clearHistoryBtn.addEventListener('click', clearHistoryHandler, false)
+
+function keyDownHandler (event) {
+    if (event.key == 'Right' || event.key == 'ArrowRight') rightPressed = true
+    if (event.key == 'Left' || event.key == 'ArrowLeft') leftPressed = true
+}
+
+function keyUpHandler (event) {
+    if (event.key == 'Right' || event.key == 'ArrowRight') rightPressed = false
+    if (event.key == 'Left' || event.key == 'ArrowLeft') leftPressed = false
+}
+
+function mouseMoveHandler(event){
+    var relativeX = event.clientX - canvas.offsetLeft
+    if (relativeX > 0 && relativeX < canvas.width){
+        paddleX = relativeX - paddleWidth / 2
+        if (paddleX < 0){
+            paddleX = 0
+        }
+        if (paddleX + paddleWidth > canvas.width) paddleX = canvas.width - paddleWidth
+    }
+}
+
+function clearHistoryHandler() {
+    localStorage.clear()
+    window.location.reload()
+}
+
+function collisionDetection() {
+    for (let c = 0; c < brickColumnCount; c++){
+        for (let r = 0; r < brickRowCount; r++){
+            var b = bricks[c][r]
+            if (b.status == 1){
+                if (x > b.x && x < b.x + brickWidth && y > b.y && y < b.y + brickHeight){
+                    dy = -dy
+                    b.status = 0
+                    score++
+                    if (score == brickRowCount * brickColumnCount) {
+                        alert('YOU WIN')
+                        $.location.reload()
+                        let currentTime = String(time.getDate()) + '/' + String(time.getMonth() + 1) + '/' + String(time.getFullYear()) + ' - ' + String(time.getHours()) + ' : ' + String(time.getMinutes())
+                        localStorage.setItem(currentTime, 'WIN')
+                    }
+                }
+            }
+        }
+    }
+}
+
+function drawBall() {
+    ctx.beginPath()
+    ctx.arc(x, y, ballRadius, 0, Math.PI*2)
+    ctx.fillStyle = "#0095DD"
+    ctx.fill()
+    ctx.closePath()
+}
+
+function  drawPaddle() {
+    ctx.beginPath()
+    ctx.rect(paddleX, canvas.height-paddleHeight, paddleWidth, paddleHeight)
+    ctx.fillStyle = '#0095DD'
+    ctx.fill()
+    ctx.closePath()
+}
+
+function drawBricks () {
+    for (let c = 0; c < brickColumnCount; c++){
+        for (r = 0; r < brickRowCount; r++){
+            if (bricks[c][r].status == 1){
+                var brickX = (c * (brickWidth + brickPadding)) + brickOffsetLeft
+                var brickY = (r * (brickHeight + brickPadding)) + brickOffsetTop
+                bricks[c][r].x = brickX
+                bricks[c][r].y = brickY
+                ctx.beginPath()
+                ctx.rect(brickX, brickY, brickWidth, brickHeight)
+                ctx.fillStyle = '#0095DD'
+                ctx.fill()
+                ctx.closePath()
+            }
+        }
+    }
+}
+
+function drawScore(){
+    ctx.beginPath()
+    ctx.font = '16px Arial'
+    ctx.fillStyle = '#0095DD'
+    ctx.fillText('Score: ' + score, 8, 20)
+}
+
+function drawLives() {
+    ctx.font = '16px Arial'
+    ctx.fillStyle = '#0095DD'
+    ctx.fillText('Lives: ' + lives, canvas.width-65, 20)
+}
+
+(function drawHistory(){
+    for (let i=0; i < localStorage.length; i++){
+        let time = localStorage.key(i)
+        let status = localStorage.getItem(time)
+        let tr = $.createElement('tr')
+        let timeHistory = $.createElement('td')
+        let statusHistory = $.createElement('td')
+        timeHistory.append(time)
+        statusHistory.append(status)
+        tr.append(...[timeHistory,statusHistory])
+        tableContent.append(tr)
+    }
+})()
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    drawBricks()
+    drawBall()
+    drawPaddle()
+    drawScore()
+    drawLives()
+    collisionDetection()
+    if (x + dx > canvas.width-ballRadius || x + dx < 0) dx = -dx
+    if (y + dy < ballRadius){
+        dy = -dy
+    }else if (y + dy > canvas.height - ballRadius){
+        if (x > paddleX && x < paddleX + paddleWidth){
+            dy = -dy
+        }else{
+            lives--
+            if (!lives){
+                alert('GAME OVER')
+                $.location.reload()
+                let currentTime = String(time.getDate()) + '/' + String(time.getMonth() + 1) + '/' + String(time.getFullYear()) + ' - ' + String(time.getHours()) + ' : ' + String(time.getMinutes())
+                localStorage.setItem(currentTime, 'Lose')
+            }else {
+                x = canvas.width / 2
+                y = canvas.height - 30
+                dx = 3
+                dy = -3
+                paddleX = (canvas.width - paddleWidth) / 2  
+            }
+        }
+    }
+    if (rightPressed) {
+        paddleX += 7
+        if (paddleX + paddleWidth > canvas.width) paddleX = canvas.width - paddleWidth
+    }
+    if (leftPressed) {
+        paddleX -= 7
+        if (paddleX < 0) paddleX = 0
+    }
+    x += dx
+    y += dy
+    requestAnimationFrame(draw)
+}
+
+draw()
+</script>
+
+</body>
+</html>
